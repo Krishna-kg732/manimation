@@ -1,54 +1,134 @@
-# React + TypeScript + Vite
+# 🎬 Manimation – Prompt-to-Manim Video Generator
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Manimation** is a full-stack web app that transforms natural language prompts into beautiful Manim animations. It leverages an LLM to generate Python code dynamically and renders the result into `.mp4` videos using Manim.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🧠 Features
 
-## Expanding the ESLint configuration
+- 💡 **Prompt-based Input** — Write plain English prompts.
+- ⚙️ **LLM Code Generation** — Translates prompt to valid Manim code.
+- 🧼 **Code Sanitization** — Cleans and validates before execution.
+- 🎞️ **Manim Video Rendering** — Renders animations in `.mp4` format.
+- 🌐 **Frontend UI** — Built with React + TypeScript + Vite.
+- 🧪 **Backend API** — Node.js (TypeScript) + Python execution layer.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+## 📁 Project Structure
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+manimation/
+├── client/ # Frontend (React + Vite)
+│ └── src/
+│ ├── assets/ # Static assets & styles
+│ ├── App.tsx # Main UI logic
+│ └── theme.ts # Theme config
+│
+├── server/ # Backend (Node.js + TypeScript)
+│ ├── services/ # Core logic
+│ │ ├── gemini.ts # LLM integration
+│ │ ├── list_models.ts # Model listing
+│ │ └── manim_generator.py # Manim execution + sanitization
+│ ├── media/ # Generated video output
+│ │ └── videos/ # .mp4 videos (output folder)
+│ └── index.ts # Entry point for backend API
+│
+├── .env # Environment variables
+├── README.md # Project documentation
+└── node_modules/, .gitignore, etc.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+yaml
+Copy
+Edit
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+---
+
+## 🚀 Getting Started
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/your-username/manimation.git
+cd manimation
+2. Install Dependencies
+Backend (Node.js)
+bash
+Copy
+Edit
+cd server
+npm install
+Frontend (React + Vite)
+bash
+Copy
+Edit
+cd ../client
+npm install
+3. Install Manim & Python Dependencies
+Ensure Python 3.9+ is installed. Then:
+
+bash
+Copy
+Edit
+# Activate virtual environment (optional)
+python -m venv .venv
+source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+
+# Install Manim
+pip install manim
+🛠️ Development
+Start the Frontend
+bash
+Copy
+Edit
+cd client
+npm run dev
+Start the Backend
+bash
+Copy
+Edit
+cd ../server
+npm run dev
+📦 Build for Production
+bash
+Copy
+Edit
+# Build frontend
+cd client
+npm run build
+bash
+Copy
+Edit
+# Build backend if needed (tsc)
+cd ../server
+npm run build
+📂 Output
+Rendered videos are saved under:
+
+bash
+Copy
+Edit
+server/media/videos/
+🧪 Technologies Used
+Frontend: React, TypeScript, Vite
+
+Backend: Node.js, Express, TypeScript
+
+LLM API: Gemini (Google) or OpenAI (customizable)
+
+Renderer: Manim (Python)
+
+Tools: Git, VSCode, dotenv
+
+🧠 Future Ideas
+Download/share videos
+
+Custom camera config & frame rate
+
+📜 License
+MIT License. See LICENSE for details.
+
+vbnet
+Copy
+Edit
+
+Let me know if you'd like a badge section (e.g., Build Status, License, etc.) or deployment instruc
