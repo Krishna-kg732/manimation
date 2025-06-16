@@ -54,19 +54,24 @@ app.post('/generate-animation', (req: Request<{}, any, GenerateAnimationRequest>
         });
       }
 
-      // Write the generated code to a temporary file
-      const tmp = require('tmp');
-      const tmpFile = tmp.fileSync({ postfix: '.py' });
-      fs.writeFileSync(tmpFile.name, manimCode, 'utf8');
-
-      // Debug: log the command and arguments
-      const pythonScriptPath = path.resolve('src', 'manim_generator.py');
-      const pythonArgs = [pythonScriptPath, '--codefile', tmpFile.name, '--prompt', prompt];
-      console.log('Spawning Python process:', 'python', pythonArgs);
-
       // Create a promise to handle the Python process
       const generateAnimation = () => new Promise<string>((resolve, reject) => {
-        const pythonProcess = spawn('python', pythonArgs);
+        const pythonProcess = spawn('python', [
+          '-c',
+          `
+import sys
+import os
+sys.path.append('${path.resolve('src')}')
+from manim_generator import AnimationGenerator
+generator = AnimationGenerator(output_dir='media/videos')
+try:
+    video_path = generator.generate_animation_from_code("""${manimCode}""", """${prompt}""")
+    print(video_path)
+except Exception as e:
+    print("ERROR: " + str(e), file=sys.stderr)
+    sys.exit(1)
+          `
+        ]);
 
         let videoPath = '';
         let errorOutput = '';
@@ -85,7 +90,6 @@ app.post('/generate-animation', (req: Request<{}, any, GenerateAnimationRequest>
         });
 
         pythonProcess.on('close', (code) => {
-          tmpFile.removeCallback(); // Clean up temp file
           if (code !== 0) {
             reject(new Error(`Animation generation failed: ${errorOutput}`));
           } else {

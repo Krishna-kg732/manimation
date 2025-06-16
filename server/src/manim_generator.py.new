@@ -103,27 +103,6 @@ class AnimationGenerator:
         # Ensure play() calls are properly formatted
         code = re.sub(r'self\.play\s*\(\s*\)', r'# self.play() # Empty play call removed', code)
         
-        # Ensure all function definitions have a non-empty body (insert 'pass' if needed)
-        lines = code.split('\n')
-        fixed_lines = []
-        i = 0
-        while i < len(lines):
-            line = lines[i]
-            stripped = line.lstrip()
-            fixed_lines.append(line)
-            # Detect function definition
-            if stripped.startswith('def '):
-                # Look ahead to next non-empty, non-comment line
-                j = i + 1
-                while j < len(lines) and (lines[j].strip() == '' or lines[j].strip().startswith('#')):
-                    j += 1
-                # If next line is not more indented, insert 'pass'
-                if j == len(lines) or (len(lines[j]) - len(lines[j].lstrip()) <= len(line) - len(stripped)):
-                    indent = ' ' * (len(line) - len(stripped) + 4)
-                    fixed_lines.append(f'{indent}pass')
-            i += 1
-        code = '\n'.join(fixed_lines)
-        
         return code
         
     def validate_code(self, code):
@@ -309,33 +288,3 @@ class AnimationGenerator:
         except Exception as e:
             print(f"Error generating animation: {str(e)}")
             raise ValueError(f"Animation generation failed: {str(e)}")
-
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description="Manim Animation Generator CLI")
-    parser.add_argument('--code', type=str, help='Manim code to execute')
-    parser.add_argument('--codefile', type=str, help='Path to file containing Manim code to execute')
-    parser.add_argument('--prompt', type=str, help='Prompt that generated the code')
-    args = parser.parse_args()
-
-    code = None
-    if args.codefile:
-        with open(args.codefile, 'r', encoding='utf-8') as f:
-            code = f.read()
-    elif args.code:
-        code = args.code
-
-    if code and args.prompt:
-        generator = AnimationGenerator(output_dir="media/videos")
-        try:
-            result = generator.generate_animation_from_code(code, args.prompt)
-            if isinstance(result, dict) and 'video_path' in result:
-                print(result['video_path'])
-            else:
-                print(result)
-        except Exception as e:
-            print(f"ERROR: Animation generation failed: {str(e)}", file=sys.stderr)
-            sys.exit(1)
-    else:
-        print("ERROR: --codefile or --code and --prompt arguments are required", file=sys.stderr)
-        sys.exit(1)
