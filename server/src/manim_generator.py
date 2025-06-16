@@ -1,318 +1,141 @@
-from manim import *
+from manim import *  # This imports all Manim components
 import json
 import os
 import sys
 import re
+import argparse
+import tempfile
 
 class AnimationGenerator:
     def __init__(self, output_dir="media/videos"):
         self.output_dir = output_dir
         # Create output directory if it doesn't exist
-        os.makedirs(output_dir, exist_ok=True)
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
     
     def sanitize_code(self, code):
         """
-        Sanitize code to fix invalid escape sequences in string literals and other common issues.
+        Sanitize the generated code:
+        - Fix invalid escape sequences
+        - Ensure complete function blocks
+        - Handle indentation issues
         """
-        # Fix invalid escape sequences directly
-        # This regex pattern finds all backslashes not followed by a valid escape character
-        code = re.sub(r'\\([^\\\'\"nrtbfvax0-7])', r'\\\\\1', code)
+        # Fix common invalid escape sequences
+        escape_fixes = {
+            r'\P': r'\\P',  # Fix \P escape sequence
+            r'\A': r'\\A',
+            r'\C': r'\\C',
+            r'\M': r'\\M',
+            r'\S': r'\\S',
+            r'\B': r'\\B',
+            r'\D': r'\\D',
+            r'\E': r'\\E',
+            r'\F': r'\\F',
+            r'\G': r'\\G',
+            r'\H': r'\\H',
+            r'\I': r'\\I',
+            r'\J': r'\\J',
+            r'\K': r'\\K',
+            r'\L': r'\\L',
+            r'\N': r'\\N',
+            r'\O': r'\\O',
+            r'\Q': r'\\Q',
+            r'\R': r'\\R',
+            r'\T': r'\\T',
+            r'\U': r'\\U',
+            r'\V': r'\\V',
+            r'\W': r'\\W',
+            r'\X': r'\\X',
+            r'\Y': r'\\Y',
+            r'\Z': r'\\Z',
+        }
         
-        # Replace single backslashes in string literals with double backslashes
-        def fix_escapes(match):
-            s = match.group(0)
-            # Only replace if not already a raw string
-            if not s.startswith('r'):
-                # Fix common invalid escape sequences
-                s = re.sub(r'\\([^\\\'\"nrtbfvax0-7])', r'\\\\\1', s)
-            return s
+        for seq, replacement in escape_fixes.items():
+            code = code.replace(seq, replacement)
         
-        # This regex matches string literals (both single and double quotes)
-        code = re.sub(r'([ru]?"[^"\\]*(?:\\.[^"\\]*)*"|[ru]?\'[^\'\\]*(?:\\.[^\'\\]*)*\')', fix_escapes, code)
-        
-        # Fix tabs vs spaces
-        code = code.replace('\t', '    ')
-        
-        # Replace problematic Manim methods
-        code = code.replace('add_coordinate_labels', '# add_coordinate_labels (not supported)')
-        
-        # Ensure proper scene class inheritance
-        if 'class' in code and 'Scene' in code and not '(Scene)' in code:
-            code = re.sub(r'class\s+(\w+)(?:\s*\([^)]*\))?:', r'class \1(Scene):', code)
-            
-        # Ensure from manim import * is present and it's the only import
-        if not 'from manim import *' in code:
-            code = 'from manim import *\n\n' + code
-            
-        # Comment out any other imports
-        code = re.sub(r'^import\s+(?!manim)(.*)$', r'# import \1 # auto-commented for safety', code, flags=re.MULTILINE)
-        
-        # Fix common indentation issues in Scene class
-        lines = code.split('\n')
-        in_class = False
-        in_method = False
-        class_indent = 0
-        method_indent = 0
-        fixed_lines = []
-        
-        for line in lines:
-            stripped = line.lstrip()
-            if not stripped:  # Empty line
-                fixed_lines.append(line)
-                continue
-                
-            # Check for class definition
-            if stripped.startswith('class ') and '(Scene)' in stripped:
-                in_class = True
-                in_method = False
-                class_indent = len(line) - len(stripped)
-                fixed_lines.append(line)
-                continue
-                
-            # Check for construct method
-            if in_class and stripped.startswith('def construct'):
-                in_method = True
-                method_indent = len(line) - len(stripped)
-                # Ensure method is properly indented inside class (4 spaces)
-                if method_indent < class_indent + 4:
-                    line = ' ' * (class_indent + 4) + stripped
-                    method_indent = class_indent + 4
-                fixed_lines.append(line)
-                continue
-                
-            # Handle content inside construct method
-            if in_class and in_method and not stripped.startswith('def ') and not stripped.startswith('class '):
-                # If content seems to not be indented enough
-                indent = len(line) - len(stripped)
-                if stripped and indent <= method_indent:
-                    # This line should be inside the method but isn't indented correctly
-                    if not stripped.startswith('#'):  # Don't fix comments
-                        line = ' ' * (method_indent + 4) + stripped
-                fixed_lines.append(line)
-                continue
-                
-            # Lines outside methods
-            fixed_lines.append(line)
-            
-        code = '\n'.join(fixed_lines)
-        
-        # Fix common syntax errors
-        code = code.replace('self.create(', 'self.play(Create(')
-        code = code.replace('self.add_coordinate_labels', '# self.add_coordinate_labels')
-        
-        # Ensure play() calls are properly formatted
-        code = re.sub(r'self\.play\s*\(\s*\)', r'# self.play() # Empty play call removed', code)
-        
-        # Ensure all function definitions have a non-empty body (insert 'pass' if needed)
-        lines = code.split('\n')
-        fixed_lines = []
+        # Add pass statement to empty function bodies
+        lines = code.split("\n")
         i = 0
         while i < len(lines):
             line = lines[i]
-            stripped = line.lstrip()
-            fixed_lines.append(line)
-            # Detect function definition
-            if stripped.startswith('def '):
-                # Look ahead to next non-empty, non-comment line
-                j = i + 1
-                while j < len(lines) and (lines[j].strip() == '' or lines[j].strip().startswith('#')):
-                    j += 1
-                # If next line is not more indented, insert 'pass'
-                if j == len(lines) or (len(lines[j]) - len(lines[j].lstrip()) <= len(line) - len(stripped)):
-                    indent = ' ' * (len(line) - len(stripped) + 4)
-                    fixed_lines.append(f'{indent}pass')
+            # Check for function definition
+            if re.match(r'\s*def\s+\w+.*:', line):
+                # Check if next line exists and is properly indented
+                if i == len(lines) - 1 or not lines[i+1].strip() or not re.match(r'\s+', lines[i+1]):
+                    # Insert pass statement
+                    indent = re.match(r'(\s*)', line).group(1) + '    '
+                    lines.insert(i + 1, f"{indent}pass")
             i += 1
-        code = '\n'.join(fixed_lines)
-        
-        return code
-        
+            
+        return "\n".join(lines)
+
     def validate_code(self, code):
         """
-        Basic validation of the generated code to prevent malicious code execution and common LLM errors.
+        Validate the code to ensure it's proper Manim code
         """
-        # Check for suspicious imports or system calls
-        suspicious_patterns = [
-            r'import\s+os',
-            r'import\s+sys',
-            r'import\s+subprocess',
-            r'__import__',
-            r'add_coordinate_labels',  # Known-bad method for your Manim version
-        ]
-        for pattern in suspicious_patterns:
-            if re.search(pattern, code):
-                raise ValueError(f"Generated code contains forbidden or invalid pattern: {pattern}")
-                
-        # Syntax validation - look for basic Python syntax issues
+        # Use sanitize_code to fix common issues
+        code = self.sanitize_code(code)
+        
+        # Further validation can be added here
         try:
-            # Just try to parse the code - we won't execute it yet
-            compile(code, '<string>', 'exec')
+            # Try to compile the code to check for syntax errors
+            compile(code, "<string>", "exec")
+            return True, code
         except SyntaxError as e:
-            # If there's a syntax error, try to fix common issues and recompile
-            fixed_code = self.sanitize_code(code)
-            try:
-                compile(fixed_code, '<string>', 'exec')
-                print(f"Fixed syntax error: {str(e)}")
-                return True
-            except SyntaxError as e2:
-                raise ValueError(f"Syntax error in generated code: {str(e2)}")
-        
-        # Check for common Manim-specific issues
-        if not re.search(r'class\s+\w+\s*\(\s*Scene\s*\)', code):
-            raise ValueError("No Scene class found in the code")
-            
-        if not re.search(r'def\s+construct\s*\(\s*self', code):
-            raise ValueError("No construct method found or missing 'self' parameter")
-        
-        return True
-        
-    def generate_animation_from_code(self, code, prompt):
+            return False, f"Syntax error in generated code: {str(e)}"
+
+    def generate_animation_from_code(self, code, prompt=""):
         """
-        Generates an animation from provided Manim code.
-        Args:
-            code (str): The Manim Python code to execute
-            prompt (str): The prompt that generated the code (used for filename)
+        Generate an animation from Manim code.
+        Takes a string of Python code that creates a Manim scene.
+        Returns the path to the generated video.
         """
         try:
             # Validate the code
-            self.validate_code(code)
+            valid, result = self.validate_code(code)
+            if not valid:
+                print(f"ERROR: {result}", file=sys.stderr)
+                return None
+
+            # Extract scene class name
+            scene_match = re.search(r'class\s+(\w+)\s*\(\s*Scene\s*\)', code)
+            if not scene_match:
+                print("ERROR: No Scene class found in the code", file=sys.stderr)
+                return None
+
+            scene_name = scene_match.group(1)
             
-            # Extract the scene class name
-            scene_class_match = re.search(r'class\s+(\w+)\(Scene\)', code)
-            if not scene_class_match:
-                raise ValueError("Could not find Scene class name")
+            # Convert code to Python namespace
+            namespace = {}
             
-            scene_class_name = scene_class_match.group(1)
-            
-            # Configure Manim
-            config.media_dir = self.output_dir
-            config.video_dir = self.output_dir
-            config.output_file = f"animation_{hash(prompt) & 0xffffffff}"
-            config.format = "mp4"
-            config.quality = "medium_quality"
-            config.save_last_frame = False
-            
-            # Create output directory if it doesn't exist
-            os.makedirs(self.output_dir, exist_ok=True)
-            
-            # Sanitize code
-            code = self.sanitize_code(code)
-              
-            # Execute the code in a restricted scope
-            namespace = {
-                '__name__': '__main__',
-                'Scene': Scene,
-                'Circle': Circle,
-                'Square': Square,
-                'Rectangle': Rectangle,
-                'Triangle': Triangle,
-                'Text': Text,
-                'Tex': Tex,
-                'MathTex': MathTex,
-                'Mobject': Mobject,
-                'VGroup': VGroup,
-                'VMobject': VMobject,
-                'Line': Line,
-                'Arrow': Arrow,
-                'Dot': Dot,
-                'Graph': Graph,
-                'Create': Create,
-                'Write': Write,
-                'FadeIn': FadeIn,
-                'FadeOut': FadeOut,
-                'Transform': Transform,
-                'ReplacementTransform': ReplacementTransform,
-                'AnimationGroup': AnimationGroup,
-                'Rotate': Rotate,
-                'MoveAlongPath': MoveAlongPath,
-                'GrowFromCenter': GrowFromCenter,
-                'GrowFromPoint': GrowFromPoint,
-                'FadeToColor': FadeToColor,
-                'ScaleInPlace': ScaleInPlace,
-                'Indicate': Indicate,
-                'UP': UP,
-                'DOWN': DOWN,
-                'LEFT': LEFT,
-                'RIGHT': RIGHT,
-                'ORIGIN': ORIGIN,
-                'UL': UL,
-                'UR': UR,
-                'DL': DL,
-                'DR': DR,
-                'PI': PI,
-                'TAU': TAU,
-                'RED': RED,
-                'GREEN': GREEN,
-                'BLUE': BLUE,
-                'YELLOW': YELLOW,
-                'PURPLE': PURPLE,
-                'ORANGE': ORANGE,
-                'WHITE': WHITE,
-                'BLACK': BLACK,
-                'GRAY': GRAY,
-                'Axes': Axes,
-                'NumberPlane': NumberPlane,
-                'NumberLine': NumberLine,
-                'ThreeDAxes': ThreeDAxes,
-                'Angle': Angle,
-                'ArcBetweenPoints': ArcBetweenPoints,
-                'Brace': Brace,
-                'CurvedArrow': CurvedArrow,
-                'DecimalNumber': DecimalNumber,
-                'DoubleArrow': DoubleArrow,
-                'Integer': Integer,
-                'Polygon': Polygon,
-                'SurroundingRectangle': SurroundingRectangle,
-                'Table': Table,
-                'ValueTracker': ValueTracker,
-                'Vector': Vector,
-                'VectorizedPoint': VectorizedPoint,
-                'Wait': Wait,
-                'ApplyMethod': ApplyMethod,
-                'ShowPassingFlash': ShowPassingFlash,
-                'Flash': Flash,
-                'GrowArrow': GrowArrow,
-                'config': config,
-            }
-            
-            # Compile the code
-            compiled_code = compile(code, '<string>', 'exec')
-            
-            # Execute the code (this populates the namespace with the scene class)
-            exec(compiled_code, namespace)
-            
+            # Execute the code in a temporary namespace
+            try:
+                exec(result, namespace)
+            except Exception as e:
+                print(f"ERROR: Code execution failed: {str(e)}", file=sys.stderr)
+                return None
+
             # Get the scene class from the namespace
-            scene_class = namespace.get(scene_class_name)
+            scene_class = namespace.get(scene_name)
             if not scene_class:
-                raise ValueError(f"Scene class {scene_class_name} not found after code execution")
+                print(f"ERROR: Scene class '{scene_name}' not found", file=sys.stderr)
+                return None
+
+            # Create the output file path
+            output_file = os.path.join(self.output_dir, f"{hash(prompt)}.mp4")
             
-            # Create the scene
+            # Render the scene to video file
             scene = scene_class()
-            
-            # Render the scene
             scene.render()
             
-            # Get the output file path
-            output_file = os.path.join(self.output_dir, f"{config.output_file}.mp4")
-            if not os.path.exists(output_file):
-                # Try other potential output paths
-                output_file = os.path.join(self.output_dir, scene_class_name, "480p15", f"{config.output_file}.mp4")
-                if not os.path.exists(output_file):
-                    output_file = os.path.join(self.output_dir, "videos", scene_class_name, "480p15", f"{config.output_file}.mp4")
-                    if not os.path.exists(output_file):
-                        raise ValueError(f"Could not find output file after rendering. Expected at {output_file}")
-            
-            return {
-                "video_path": output_file,
-                "scene_class": scene_class_name
-            }
-            
+            return output_file
+        
         except Exception as e:
-            print(f"Error generating animation: {str(e)}")
-            raise ValueError(f"Animation generation failed: {str(e)}")
+            print(f"ERROR: Animation generation failed: {str(e)}", file=sys.stderr)
+            return None
 
 if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description="Manim Animation Generator CLI")
+    parser = argparse.ArgumentParser(description="Manim Animation Generator")
     parser.add_argument('--code', type=str, help='Manim code to execute')
     parser.add_argument('--codefile', type=str, help='Path to file containing Manim code to execute')
     parser.add_argument('--prompt', type=str, help='Prompt that generated the code')
@@ -327,15 +150,10 @@ if __name__ == "__main__":
 
     if code and args.prompt:
         generator = AnimationGenerator(output_dir="media/videos")
-        try:
-            result = generator.generate_animation_from_code(code, args.prompt)
-            if isinstance(result, dict) and 'video_path' in result:
-                print(result['video_path'])
-            else:
-                print(result)
-        except Exception as e:
-            print(f"ERROR: Animation generation failed: {str(e)}", file=sys.stderr)
-            sys.exit(1)
+        result = generator.generate_animation_from_code(code, args.prompt)
+        if result:
+            print(f"Animation video saved to: {result}")
+        else:
+            print("ERROR: Animation generation failed", file=sys.stderr)
     else:
         print("ERROR: --codefile or --code and --prompt arguments are required", file=sys.stderr)
-        sys.exit(1)
