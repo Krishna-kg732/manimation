@@ -15,6 +15,10 @@
 
 ---
 
+<details> <summary><strong>📁 Click to Expand: Project Structure (Markdown Code)</strong></summary>
+markdown
+Copy
+Edit
 ## 📁 Project Structure
 
 manimation/
@@ -22,26 +26,27 @@ manimation/
 │ └── src/
 │ ├── assets/ # Static assets & styles
 │ ├── App.tsx # Main UI logic
-│ └── theme.ts # Theme config
+│ ├── main.tsx # React DOM mounting
+│ ├── theme.ts # Theme config
+│ └── ... # Other components and utilities
 │
 ├── server/ # Backend (Node.js + TypeScript)
 │ ├── services/ # Core logic
 │ │ ├── gemini.ts # LLM integration
 │ │ ├── list_models.ts # Model listing
-│ │ └── manim_generator.py # Manim execution + sanitization
-│ ├── media/ # Generated video output
-│ │ └── videos/ # .mp4 videos (output folder)
-│ └── index.ts # Entry point for backend API
+│ │ └── manim_generator.py # Python script to render Manim video
+│ ├── media/ # Rendered Manim video output
+│ │ └── videos/ # .mp4 files
+│ ├── index.ts # API entry point
+│ └── ... # TypeScript configs & env
 │
-├── .env # Environment variables
+├── .env # Environment configuration
 ├── README.md # Project documentation
 └── node_modules/, .gitignore, etc.
 
-yaml
 Copy
 Edit
-
----
+</details>
 
 ## 🚀 Getting Started
 
