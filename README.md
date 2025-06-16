@@ -1,139 +1,136 @@
-# 🎬 Manimation – Prompt-to-Manim Video Generator
+# 🎬 Manimation
 
-**Manimation** is a full-stack web app that transforms natural language prompts into beautiful Manim animations. It leverages an LLM to generate Python code dynamically and renders the result into `.mp4` videos using Manim.
-
----
-
-## 🧠 Features
-
-- 💡 **Prompt-based Input** — Write plain English prompts.
-- ⚙️ **LLM Code Generation** — Translates prompt to valid Manim code.
-- 🧼 **Code Sanitization** — Cleans and validates before execution.
-- 🎞️ **Manim Video Rendering** — Renders animations in `.mp4` format.
-- 🌐 **Frontend UI** — Built with React + TypeScript + Vite.
-- 🧪 **Backend API** — Node.js (TypeScript) + Python execution layer.
+**Manimation** is a full-stack web application that generates Manim animations from natural language prompts using an LLM and renders them to MP4 using Python's Manim engine.
 
 ---
 
-<details> <summary><strong>📁 Click to Expand: Project Structure (Markdown Code)</strong></summary>
-markdown
-Copy
-Edit
+## 🚀 Features
+
+- ✨ Generate mathematical animations via AI
+- 🎨 LLM-generated Manim code is sanitized and validated
+- 📽️ Render and serve MP4 videos on demand
+- ⚛️ React + Vite frontend
+- 🧠 Google Gemini / other LLM backend support
+- 🐍 Manim integration through Python runtime
+
+---
+
 ## 📁 Project Structure
 
+```
 manimation/
-├── client/ # Frontend (React + Vite)
-│ └── src/
-│ ├── assets/ # Static assets & styles
-│ ├── App.tsx # Main UI logic
-│ ├── main.tsx # React DOM mounting
-│ ├── theme.ts # Theme config
-│ └── ... # Other components and utilities
+├── client/                  # Frontend (React + Vite)
+│   └── src/
+│       ├── assets/          # Static assets & styles
+│       ├── App.tsx          # Main UI logic
+│       ├── main.tsx         # React DOM mounting
+│       ├── theme.ts         # Theme config
+│       └── ...              # Other components and utilities
 │
-├── server/ # Backend (Node.js + TypeScript)
-│ ├── services/ # Core logic
-│ │ ├── gemini.ts # LLM integration
-│ │ ├── list_models.ts # Model listing
-│ │ └── manim_generator.py # Python script to render Manim video
-│ ├── media/ # Rendered Manim video output
-│ │ └── videos/ # .mp4 files
-│ ├── index.ts # API entry point
-│ └── ... # TypeScript configs & env
+├── server/                  # Backend (Node.js + TypeScript)
+│   ├── services/            # Core logic
+│   │   ├── gemini.ts        # LLM integration
+│   │   ├── list_models.ts   # Model listing
+│   │   └── manim_generator.py # Python script to render Manim video
+│   ├── media/               # Rendered Manim video output
+│   │   └── videos/          # .mp4 files
+│   ├── index.ts             # API entry point
+│   └── ...                  # TypeScript configs & env
 │
-├── .env # Environment configuration
-├── README.md # Project documentation
+├── .env                     # Environment configuration
+├── README.md                # Project documentation
 └── node_modules/, .gitignore, etc.
+```
 
-Copy
-Edit
-</details>
+---
 
-## 🚀 Getting Started
+## 🧠 How It Works
 
-### 1. Clone the Repository
+1. User inputs a math prompt in the UI.
+2. The backend sends this to an LLM (e.g. Gemini) to generate Manim Python code.
+3. Python script validates and sanitizes the code.
+4. The code is compiled and rendered using Manim.
+5. A video is saved and served back to the frontend.
+
+---
+
+## 🛠️ Installation
+
+### Prerequisites
+
+- Python 3.10+
+- Node.js 18+
+- Manim CE
+- Google Gemini API key (or any LLM)
+
+### Backend Setup
 
 ```bash
-git clone https://github.com/your-username/manimation.git
-cd manimation
-2. Install Dependencies
-Backend (Node.js)
-bash
-Copy
-Edit
 cd server
-npm install
-Frontend (React + Vite)
-bash
-Copy
-Edit
-cd ../client
-npm install
-3. Install Manim & Python Dependencies
-Ensure Python 3.9+ is installed. Then:
-
-bash
-Copy
-Edit
-# Activate virtual environment (optional)
 python -m venv .venv
 source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+pip install -r requirements.txt
 
 # Install Manim
 pip install manim
-🛠️ Development
-Start the Frontend
-bash
-Copy
-Edit
+```
+
+### Frontend Setup
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+---
+
+## 🧪 Usage
+
+1. Start the backend server:
+
+```bash
+cd server
+node index.ts
+```
+
+2. Start the frontend dev server:
+
+```bash
 cd client
 npm run dev
-Start the Backend
-bash
-Copy
-Edit
-cd ../server
-npm run dev
-📦 Build for Production
-bash
-Copy
-Edit
-# Build frontend
-cd client
-npm run build
-bash
-Copy
-Edit
-# Build backend if needed (tsc)
-cd ../server
-npm run build
-📂 Output
-Rendered videos are saved under:
+```
 
-bash
-Copy
-Edit
-server/media/videos/
-🧪 Technologies Used
-Frontend: React, TypeScript, Vite
+3. Enter a prompt like:
 
-Backend: Node.js, Express, TypeScript
+> "Show a circle morphing into a square."
 
-LLM API: Gemini (Google) or OpenAI (customizable)
+Wait for the animation to render and watch your video!
 
-Renderer: Manim (Python)
+---
 
-Tools: Git, VSCode, dotenv
+## 📦 Dependencies
 
-🧠 Future Ideas
-Download/share videos
+### Backend:
+- `manim`
+- `python-dotenv`
+- `openai` or `google-generative-ai` (for LLMs)
 
-Custom camera config & frame rate
+### Frontend:
+- `react`, `vite`
+- `tailwindcss` (optional)
+- `axios`
 
-📜 License
-MIT License. See LICENSE for details.
+---
 
-vbnet
-Copy
-Edit
+## 🔒 Security
 
-Let me know if you'd like a badge section (e.g., Build Status, License, etc.) or deployment instruc
+- Python code is sandboxed and sanitized before execution
+- Forbidden patterns (e.g., `os`, `subprocess`) are filtered
+- Manim is invoked in a safe execution environment
+
+---
+
+## 📃 License
+
+MIT License © Krishna Gupta
